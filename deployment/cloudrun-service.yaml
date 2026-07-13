@@ -9,7 +9,7 @@ spec:
     metadata:
       annotations:
         # Crucial: enable multiple containers
-        run.googleapis.com/container-dependencies: '{"atlas-gateway": ["keysentry-sidecar", "chess-sidecar"]}'
+        run.googleapis.com/container-dependencies: '{"atlas-gateway": ["keysentry-sidecar"]}'
     spec:
       containers:
         # --- The Ingress Gateway Container ---
@@ -37,20 +37,6 @@ spec:
           startupProbe:
             tcpSocket:
               port: 8001
-            initialDelaySeconds: 2
-            timeoutSeconds: 2
-            periodSeconds: 5
-            failureThreshold: 5
-
-        # --- Sidecar 2: Chess API ---
-        - image: gcr.io/project-atlas-501612/chess-api:latest
-          name: chess-sidecar
-          env:
-            - name: PORT
-              value: "8002"
-          startupProbe:
-            tcpSocket:
-              port: 8002
             initialDelaySeconds: 2
             timeoutSeconds: 2
             periodSeconds: 5
