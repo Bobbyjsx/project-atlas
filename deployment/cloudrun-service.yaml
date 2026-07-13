@@ -1,0 +1,43 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: project-atlas
+  annotations:
+    run.googleapis.com/launch-stage: BETA
+spec:
+  template:
+    metadata:
+      annotations:
+        # Crucial: enable multiple containers
+        run.googleapis.com/container-dependencies: '{"atlas-gateway": ["keysentry-sidecar", "chess-sidecar"]}'
+    spec:
+      containers:
+        # --- The Ingress Gateway Container ---
+        - image: gcr.io/YOUR_PROJECT_ID/project-atlas:latest
+          name: atlas-gateway
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SUPABASE_JWT_SECRET
+              value: "your-secret-here"
+          resources:
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+
+        # --- Sidecar 1: KeySentry API ---
+        - image: gcr.io/YOUR_PROJECT_ID/keysentry-api:latest
+          name: keysentry-sidecar
+          env:
+            - name: PORT
+              value: "8001"
+            # It connects to the shared DB from the environment
+            - name: DATABASE_URL
+              value: "postgresql+asyncpg://user:password@cloud-sql-proxy:5432/db"
+
+        # --- Sidecar 2: Chess API ---
+        - image: gcr.io/YOUR_PROJECT_ID/chess-api:latest
+          name: chess-sidecar
+          env:
+            - name: PORT
+              value: "8002"
