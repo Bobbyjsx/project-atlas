@@ -1,0 +1,5 @@
+services:
+  chess-api:
+    version: v1.2.0
+  keysentry-api:
+    version: v2.4.1
