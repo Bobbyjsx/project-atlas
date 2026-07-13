@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
         # --- The Ingress Gateway Container ---
-        - image: gcr.io/YOUR_PROJECT_ID/project-atlas:latest
+        - image: gcr.io/project-atlas-501612/project-atlas:latest
           name: atlas-gateway
           ports:
             - containerPort: 8080
@@ -26,7 +26,7 @@ spec:
               memory: "512Mi"
 
         # --- Sidecar 1: KeySentry API ---
-        - image: gcr.io/YOUR_PROJECT_ID/keysentry-api:latest
+        - image: gcr.io/project-atlas-501612/keysentry-api:latest
           name: keysentry-sidecar
           env:
             - name: PORT
@@ -36,7 +36,7 @@ spec:
               value: "postgresql+asyncpg://user:password@cloud-sql-proxy:5432/db"
 
         # --- Sidecar 2: Chess API ---
-        - image: gcr.io/YOUR_PROJECT_ID/chess-api:latest
+        - image: gcr.io/project-atlas-501612/chess-api:latest
           name: chess-sidecar
           env:
             - name: PORT
