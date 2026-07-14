@@ -50,6 +50,11 @@ spec:
                 secretKeyRef:
                   name: atlas-gotrue-jwt-secret
                   key: latest
+            - name: GOTRUE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: atlas-gotrue-url
+                  key: latest
           startupProbe:
             tcpSocket:
               port: 8001
