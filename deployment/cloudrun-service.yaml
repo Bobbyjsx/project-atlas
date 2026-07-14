@@ -55,6 +55,21 @@ spec:
                 secretKeyRef:
                   name: atlas-gotrue-url
                   key: latest
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: keysentry-encryption-key
+                  key: latest
+            - name: TRIGGER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: keysentry-trigger-api-key
+                  key: latest
+            - name: INTERNAL_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: keysentry-internal-api-secret
+                  key: latest
           startupProbe:
             tcpSocket:
               port: 8001

@@ -1,6 +1,6 @@
 services:
   project-atlas:
-    version: v1.1.4
+    version: v1.1.5
     repo: project-atlas
     branch: main
   keysentry-api:
