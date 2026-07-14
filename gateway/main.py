@@ -68,12 +68,21 @@ async def reverse_proxy(service_name: str, path: str, request: Request):
         )
     except httpx.RequestError as exc:
         raise HTTPException(status_code=502, detail=f"Failed to communicate with sidecar '{service_name}': {exc}")
+        
+    content = response.content
+    headers = dict(response.headers)
     
-    # Return the exact response from the sidecar
+    # Rewrite OpenAPI JSON paths in the Swagger/ReDoc HTML so they fetch from the gateway's prefix
+    if path.strip("/") in ("docs", "redoc"):
+        content = content.replace(b'"/openapi.json"', f'"/{service_name}/openapi.json"'.encode())
+        # Remove Content-Length so FastAPI recalculates it based on the new content length
+        headers.pop("content-length", None)
+        
+    # Return the modified response from the sidecar
     return Response(
-        content=response.content,
+        content=content,
         status_code=response.status_code,
-        headers=dict(response.headers)
+        headers=headers
     )
 
 @app.on_event("shutdown")
