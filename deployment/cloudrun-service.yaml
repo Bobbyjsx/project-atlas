@@ -18,11 +18,16 @@ spec:
           ports:
             - containerPort: 8080
           env:
-            - name: GOTRUE_JWT_SECRET
+            - name: API_KEY_KEYSENTRY
               valueFrom:
                 secretKeyRef:
-                  name: atlas-gotrue-jwt-secret  # Name of the secret in GCP Secret Manager
-                  key: latest                      # Use the latest version of the secret
+                  name: api-key-keysentry  # Name of the secret in GCP Secret Manager
+                  key: latest
+            - name: API_KEY_CHESS
+              valueFrom:
+                secretKeyRef:
+                  name: api-key-chess
+                  key: latest
           resources:
             limits:
               cpu: "1000m"

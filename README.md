@@ -7,12 +7,21 @@ Project Atlas is a cloud-native GitOps deployment platform designed to host mult
 The platform centralizes deployment management, reduces infrastructure costs, and eliminates cold starts for individual projects by grouping them under a single unified Cloud Run instance.
 
 ### Core Components
-- **Atlas Gateway**: The main ingress container. It routes incoming requests (e.g., `/chess`, `/keysentry`) to the respective backend sidecars via `localhost` network routing and provides centralized authentication.
-- **Data & Auth Agnostic**: Each microservice handles its own data and authentication logic (e.g., one service might use a self-hosted PostgreSQL and GoTrue, while another uses MongoDB). Atlas simply injects the required environment variables into each sidecar via GSM.
+- **Atlas Gateway**: The main ingress container. It routes incoming requests (e.g., `/chess`, `/keysentry`) to the respective backend sidecars and enforces project-level access control via the `X-Atlas-Api-Key` header.
+- **Data & Auth Agnostic**: The Gateway is fully decoupled from any specific authentication provider (like GoTrue). It relies entirely on infrastructure-level API Keys. Client applications pass the `X-Atlas-Api-Key` to get through the gateway, and can pass a separate `Authorization` header directly to the underlying service.
 - **Sidecars (Microservices)**: Independent repositories (like `keysentry-api` and `chess-api`) running as distinct containers alongside the gateway within the same Cloud Run instance.
 - **Service Manifest (`service-manifest.yaml`)**: The GitOps source of truth. It dictates which GitHub repositories, branches, and exact versions to deploy as sidecars.
 - **GitHub Actions (CI/CD)**: A dynamic pipeline that reads the manifest, pulls the external sub-service repositories, builds the Docker images, pushes them to Google Container Registry (GCR), and orchestrates the deployment.
-- **Google Secret Manager (GSM)**: Securely stores and dynamically injects sensitive environment variables (like database credentials and GoTrue secrets) directly into the Cloud Run containers at runtime.
+- **Google Secret Manager (GSM)**: Securely stores and dynamically injects sensitive environment variables (like API Keys and database URLs) directly into the Cloud Run containers at runtime.
+
+### Generating an Atlas API Key
+To create a secure API key for a new service on the platform, you can run the following command in your terminal:
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+# or using openssl:
+# openssl rand -base64 32
+```
+Save this key in Google Secret Manager as `API_KEY_<SERVICE>` (e.g., `API_KEY_KEYSENTRY`) and pass it in the `X-Atlas-Api-Key` header when making requests to the Gateway.
 
 ## Directory Structure
 
@@ -26,8 +35,10 @@ The platform centralizes deployment management, reduces infrastructure costs, an
 │       └── sidecar-ci.yml      # The dynamic GitOps CI/CD pipeline
 ├── deployment/                 
 │   └── cloudrun-service.yaml   # Cloud Run multi-container topology definition
-├── gateway/                    # The FastAPI application gateway
-│   └── main.py                 # Main application and routing logic
+├── gateway/                    # The Modular FastAPI application gateway
+│   ├── main.py                 # Main application entry point
+│   ├── core/                   # Configuration and security logic
+│   └── api/                    # API router aggregator and route definitions
 ├── requirements.txt            # Base dependencies for the gateway platform
 └── service-manifest.yaml       # Configuration detailing which sidecars to deploy
 ```
