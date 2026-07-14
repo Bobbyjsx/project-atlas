@@ -1,11 +1,7 @@
 services:
   project-atlas:
-    version: v1.0.0
+    version: v1.1.0
     repo: project-atlas
-    branch: main
-  chess-api:
-    version: v1.2.0
-    repo: chess-api
     branch: main
   keysentry-api:
     version: v2.4.2

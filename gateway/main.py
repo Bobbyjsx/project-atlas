@@ -1,6 +1,5 @@
 import httpx
 from fastapi import FastAPI, Request, HTTPException, Response
-import yaml
 import os
 
 app = FastAPI(title="Atlas Platform Gateway", version="1.0.0")
@@ -9,7 +8,6 @@ app = FastAPI(title="Atlas Platform Gateway", version="1.0.0")
 # These can be overridden via environment variables in production
 SERVICE_MAP = {
     "keysentry": os.getenv("KEYSENTRY_URL", "http://localhost:8001"),
-    "chess": os.getenv("CHESS_URL", "http://localhost:8002"),
 }
 
 # We use a single shared AsyncClient for HTTP connection pooling to maximize throughput

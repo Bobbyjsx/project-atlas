@@ -1,0 +1,123 @@
+name: Build and Push Sidecars to GCR
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'service-manifest.yaml'
+
+env:
+  REGISTRY: gcr.io
+jobs:
+  parse-manifest:
+    name: Parse Service Manifest
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.set-matrix.outputs.services }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read manifest and output JSON matrix
+        id: set-matrix
+        run: |
+          # Convert YAML to JSON array for GitHub Actions matrix
+          SERVICES_JSON=$(yq -o=json '[.services | to_entries | .[] | {"name": .key, "version": .value.version, "repo": .value.repo, "branch": .value.branch}]' service-manifest.yaml | jq -c .)
+          echo "services=$SERVICES_JSON" >> $GITHUB_OUTPUT
+
+  build-and-push:
+    name: Build ${{ matrix.service.name }} (${{ matrix.service.version }})
+    needs: parse-manifest
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.parse-manifest.outputs.services) }}
+
+    steps:
+      # Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker to use GCR
+        run: |
+          gcloud auth configure-docker gcr.io
+
+      - name: Check if image already exists in GCR
+        id: check-image
+        env:
+          IMAGE_NAME: ${{ env.REGISTRY }}/${{ vars.GCP_PROJECT_ID }}/${{ matrix.service.name }}:${{ matrix.service.version }}
+        run: |
+          # Use docker manifest inspect to see if the tag already exists
+          # If it exists, we skip the build to prevent overwriting
+          if docker manifest inspect $IMAGE_NAME > /dev/null 2>&1; then
+            echo "Image $IMAGE_NAME already exists! Skipping build."
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Image $IMAGE_NAME does not exist. Proceeding with build."
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout external repository (${{ matrix.service.repo }})
+        if: steps.check-image.outputs.exists == 'false'
+        uses: actions/checkout@v4
+        with:
+          # Dynamically prepend the org/user (e.g. Bobbyjsx)
+          repository: ${{ github.repository_owner }}/${{ matrix.service.repo }}
+          ref: ${{ matrix.service.branch }}
+          # Use a GitHub Secret for the Personal Access Token
+          token: ${{ secrets.PAT_TOKEN }}
+          path: './src'
+
+      - name: Set up Docker Buildx
+        if: steps.check-image.outputs.exists == 'false'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        if: steps.check-image.outputs.exists == 'false'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./src
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ vars.GCP_PROJECT_ID }}/${{ matrix.service.name }}:${{ matrix.service.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Cloud Run
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Update deployment manifest with new image versions
+        env:
+          # Pull variables from GitHub Vars into the environment for envsubst
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: |
+          # 1. Extract versions from manifest
+          export ATLAS_VERSION=$(yq '.services."project-atlas".version // "latest"' service-manifest.yaml)
+          export KEYSENTRY_VERSION=$(yq '.services."keysentry-api".version // "latest"' service-manifest.yaml)
+
+          # 2. Use envsubst to replace ${GCP_PROJECT_ID}, ${ATLAS_VERSION}, etc. inside the yaml file
+          envsubst < deployment/cloudrun-service.yaml > deployment/cloudrun-service-applied.yaml
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run services replace deployment/cloudrun-service-applied.yaml --region us-central1
