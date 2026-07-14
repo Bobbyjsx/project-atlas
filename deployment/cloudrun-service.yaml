@@ -13,27 +13,33 @@ spec:
     spec:
       containers:
         # --- The Ingress Gateway Container ---
-        - image: gcr.io/project-atlas-501612/project-atlas:latest
+        - image: gcr.io/${GCP_PROJECT_ID}/project-atlas:${ATLAS_VERSION}
           name: atlas-gateway
           ports:
             - containerPort: 8080
           env:
-            - name: SUPABASE_JWT_SECRET
-              value: "your-secret-here"
+            - name: GOTRUE_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: atlas-gotrue-jwt-secret  # Name of the secret in GCP Secret Manager
+                  key: latest                      # Use the latest version of the secret
           resources:
             limits:
               cpu: "1000m"
               memory: "512Mi"
 
         # --- Sidecar 1: KeySentry API ---
-        - image: gcr.io/project-atlas-501612/keysentry-api:latest
+        - image: gcr.io/${GCP_PROJECT_ID}/keysentry-api:${KEYSENTRY_VERSION}
           name: keysentry-sidecar
           env:
             - name: PORT
               value: "8001"
-            # It connects to the shared DB from the environment
+            # It fetches the DB connection string natively from Google Secret Manager
             - name: DATABASE_URL
-              value: "postgresql+asyncpg://user:password@cloud-sql-proxy:5432/db"
+              valueFrom:
+                secretKeyRef:
+                  name: keysentry-db-url           # Name of the secret in GCP Secret Manager
+                  key: latest                      # Use the latest version of the secret
           startupProbe:
             tcpSocket:
               port: 8001
