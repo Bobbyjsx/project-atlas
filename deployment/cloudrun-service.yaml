@@ -10,6 +10,9 @@ spec:
       annotations:
         # Crucial: enable multiple containers
         run.googleapis.com/container-dependencies: '{"atlas-gateway": ["keysentry-sidecar"]}'
+        # Direct VPC Egress to reach internal VM IPs (like the database at 10.218.0.2)
+        run.googleapis.com/vpc-access-egress: "private-ranges-only"
+        run.googleapis.com/network-interfaces: '[{"network":"default","subnetwork":"default"}]'
     spec:
       containers:
         # --- The Ingress Gateway Container ---
