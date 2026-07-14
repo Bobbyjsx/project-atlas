@@ -45,6 +45,11 @@ spec:
                 secretKeyRef:
                   name: keysentry-db-url           # Name of the secret in GCP Secret Manager
                   key: latest                      # Use the latest version of the secret
+            - name: GOTRUE_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: atlas-gotrue-jwt-secret
+                  key: latest
           startupProbe:
             tcpSocket:
               port: 8001
