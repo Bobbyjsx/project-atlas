@@ -36,8 +36,9 @@ async def reverse_proxy(service_name: str, path: str, request: Request):
     # Some paths might need to be public, but let's implement basic validation
     auth_header = request.headers.get("Authorization")
     
-    # We allow /auth/ routes to pass through without JWT (for login/signup)
-    if not path.startswith("auth/"):
+    # We allow /auth/ routes and standard FastAPI docs routes to pass through without JWT
+    public_prefixes = ("auth/", "docs", "redoc", "openapi.json")
+    if not path.startswith(public_prefixes):
         if not auth_header or not auth_header.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
         
