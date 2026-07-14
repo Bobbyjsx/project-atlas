@@ -9,6 +9,7 @@ on:
 
 env:
   REGISTRY: gcr.io
+  GCP_PROJECT_ID: project-atlas-501612
 jobs:
   parse-manifest:
     name: Parse Service Manifest
@@ -53,7 +54,7 @@ jobs:
       - name: Check if image already exists in GCR
         id: check-image
         env:
-          IMAGE_NAME: ${{ env.REGISTRY }}/${{ vars.GCP_PROJECT_ID }}/${{ matrix.service.name }}:${{ matrix.service.version }}
+          IMAGE_NAME: ${{ env.REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ matrix.service.name }}:${{ matrix.service.version }}
         run: |
           # Use docker manifest inspect to see if the tag already exists
           # If it exists, we skip the build to prevent overwriting
@@ -86,7 +87,7 @@ jobs:
         with:
           context: ./src
           push: true
-          tags: ${{ env.REGISTRY }}/${{ vars.GCP_PROJECT_ID }}/${{ matrix.service.name }}:${{ matrix.service.version }}
+          tags: ${{ env.REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ matrix.service.name }}:${{ matrix.service.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -109,7 +110,7 @@ jobs:
       - name: Update deployment manifest with new image versions
         env:
           # Pull variables from GitHub Vars into the environment for envsubst
-          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          GCP_PROJECT_ID: ${{ env.GCP_PROJECT_ID }}
         run: |
           # 1. Extract versions from manifest
           export ATLAS_VERSION=$(yq '.services."project-atlas".version // "latest"' service-manifest.yaml)
