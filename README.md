@@ -19,7 +19,7 @@ To create a secure API key for a new service on the platform, you can run the fo
 ```bash
 python -c "import secrets; print(secrets.token_urlsafe(32))"
 # or using openssl:
-# openssl rand -base64 32
+openssl rand -base64 32
 ```
 Save this key in Google Secret Manager as `API_KEY_<SERVICE>` (e.g., `API_KEY_KEYSENTRY`) and pass it in the `X-Atlas-Api-Key` header when making requests to the Gateway.
 
