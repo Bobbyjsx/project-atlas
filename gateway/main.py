@@ -75,6 +75,7 @@ async def reverse_proxy(service_name: str, path: str, request: Request):
     # Rewrite OpenAPI JSON paths in the Swagger/ReDoc HTML so they fetch from the gateway's prefix
     if path.strip("/") in ("docs", "redoc"):
         content = content.replace(b'"/openapi.json"', f'"/{service_name}/openapi.json"'.encode())
+        content = content.replace(b"'/openapi.json'", f"'/{service_name}/openapi.json'".encode())
         # Remove Content-Length so FastAPI recalculates it based on the new content length
         headers.pop("content-length", None)
         
