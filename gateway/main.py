@@ -33,6 +33,29 @@ async def reverse_proxy(service_name: str, path: str, request: Request):
     # Construct the target URL (e.g., http://localhost:8001/api/v1/auth/login)
     target_url = f"{base_url}/{path}"
     
+    # Validate JWT Token if service requires it (assuming all except auth require it for now)
+    # Some paths might need to be public, but let's implement basic validation
+    auth_header = request.headers.get("Authorization")
+    
+    # We allow /auth/ routes to pass through without JWT (for login/signup)
+    if not path.startswith("auth/"):
+        if not auth_header or not auth_header.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+        
+        token = auth_header.split(" ")[1]
+        jwt_secret = os.getenv("GOTRUE_JWT_SECRET")
+        if not jwt_secret:
+            raise HTTPException(status_code=500, detail="GOTRUE_JWT_SECRET not configured on Gateway")
+            
+        try:
+            import jwt
+            # GoTrue uses HS256 by default
+            jwt.decode(token, jwt_secret, algorithms=["HS256"], options={"verify_aud": False})
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail="Token has expired")
+        except jwt.InvalidTokenError as e:
+            raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
+
     # Forward the raw request to the sidecar
     try:
         req_body = await request.body()
