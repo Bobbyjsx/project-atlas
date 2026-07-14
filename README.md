@@ -8,8 +8,7 @@ The platform centralizes deployment management, reduces infrastructure costs, an
 
 ### Core Components
 - **Atlas Gateway**: The main ingress container. It routes incoming requests (e.g., `/chess`, `/keysentry`) to the respective backend sidecars via `localhost` network routing and provides centralized authentication.
-- **Authentication**: We use a standalone self-hosted **GoTrue** instance for authentication, entirely decoupling from Supabase. The Gateway handles JWT validation using the `GOTRUE_JWT_SECRET`.
-- **Database**: Backend services connect to a standalone PostgreSQL database running on a self-hosted server, bypassing Supabase data APIs.
+- **Data & Auth Agnostic**: Each microservice handles its own data and authentication logic (e.g., one service might use a self-hosted PostgreSQL and GoTrue, while another uses MongoDB). Atlas simply injects the required environment variables into each sidecar via GSM.
 - **Sidecars (Microservices)**: Independent repositories (like `keysentry-api` and `chess-api`) running as distinct containers alongside the gateway within the same Cloud Run instance.
 - **Service Manifest (`service-manifest.yaml`)**: The GitOps source of truth. It dictates which GitHub repositories, branches, and exact versions to deploy as sidecars.
 - **GitHub Actions (CI/CD)**: A dynamic pipeline that reads the manifest, pulls the external sub-service repositories, builds the Docker images, pushes them to Google Container Registry (GCR), and orchestrates the deployment.
