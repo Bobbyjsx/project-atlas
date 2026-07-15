@@ -4,6 +4,6 @@ services:
     repo: project-atlas
     branch: main
   keysentry-api:
-    version: v2.4.7
+    version: v2.4.8
     repo: keysentry-api
     branch: main
