@@ -3,6 +3,7 @@ from gateway.core.config import settings
 
 router = APIRouter(tags=["Health"])
 
+
 @router.get("/health")
 async def health():
     """
