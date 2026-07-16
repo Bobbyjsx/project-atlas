@@ -1,4 +1,4 @@
-.PHONY: install dev lint format clean
+.PHONY: install dev lint lint:fix clean
 
 # Variables
 PYTHON = .venv/bin/python
@@ -20,8 +20,8 @@ lint:
 	@echo "Running Ruff formatter check..."
 	.venv/bin/ruff format --check .
 
-format:
-	@echo "Formatting code with Ruff..."
+lint:fix:
+	@echo "Formatting and fixing code with Ruff..."
 	.venv/bin/ruff check --fix .
 	.venv/bin/ruff format .
 

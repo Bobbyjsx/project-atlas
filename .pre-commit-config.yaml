@@ -7,9 +7,3 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
-      - id: make-format
-        name: make format
-        entry: make format
-        language: system
-        types: [python]
-        pass_filenames: false
