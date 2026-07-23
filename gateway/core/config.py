@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
 
     # Public routes that don't require Gateway API Key validation
-    PUBLIC_PREFIXES: tuple = ("docs", "redoc", "openapi.json")
+    PUBLIC_PREFIXES: tuple = ("docs", "redoc", "openapi.json", "api/v1/auth")
 
     @property
     def SERVICE_MAP(self) -> dict:
