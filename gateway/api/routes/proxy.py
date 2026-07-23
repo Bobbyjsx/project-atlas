@@ -46,9 +46,8 @@ async def reverse_proxy(service_name: str, path: str, request: Request):
     headers = dict(response.headers)
 
     if response.status_code >= 400:
-        import logging
+        from gateway.core.logger import logger
 
-        logger = logging.getLogger("atlas.gateway")
         logger.error(
             f"Proxy error {response.status_code} from {service_name}/{path} - Request Body: {req_body} - Response Body: {content}"
         )
