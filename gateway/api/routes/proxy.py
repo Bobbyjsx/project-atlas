@@ -1,10 +1,26 @@
 import httpx
 from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi.responses import StreamingResponse
 
 from gateway.core.config import http_client, settings
 from gateway.core.security import validate_api_key
 
 router = APIRouter(tags=["Proxy"])
+
+
+async def _stream_response(
+    method: str,
+    url: str,
+    headers: dict,
+    content: bytes,
+    params,
+):
+    """Pass SSE chunks from the sidecar straight to the client without buffering."""
+    async with http_client.stream(
+        method, url, headers=headers, content=content, params=params
+    ) as response:
+        async for chunk in response.aiter_bytes():
+            yield chunk
 
 
 @router.api_route(
@@ -27,13 +43,26 @@ async def reverse_proxy(service_name: str, path: str, request: Request):
     # Validate API Key
     validate_api_key(request, service_name, path)
 
-    # Forward the raw request to the sidecar
+    req_body = await request.body()
+    headers = dict(request.headers)
+
+    # SSE path — stream chunks straight through without buffering
+    if "text/event-stream" in request.headers.get("accept", ""):
+        return StreamingResponse(
+            _stream_response(request.method, target_url, headers, req_body, request.query_params),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+            },
+        )
+
+    # Forward the raw request to the sidecar (buffered path)
     try:
-        req_body = await request.body()
         response = await http_client.request(
             method=request.method,
             url=target_url,
-            headers=dict(request.headers),
+            headers=headers,
             content=req_body,
             params=request.query_params,
         )
@@ -44,7 +73,7 @@ async def reverse_proxy(service_name: str, path: str, request: Request):
         )
 
     content = response.content
-    headers = dict(response.headers)
+    resp_headers = dict(response.headers)
 
     if response.status_code >= 400:
         from gateway.core.logger import logger
@@ -62,7 +91,8 @@ async def reverse_proxy(service_name: str, path: str, request: Request):
             b"'/openapi.json'", f"'/{service_name}/openapi.json'".encode()
         )
         # Remove Content-Length so FastAPI recalculates it based on the new content length
-        headers.pop("content-length", None)
+        resp_headers.pop("content-length", None)
 
     # Return the modified response from the sidecar
-    return Response(content=content, status_code=response.status_code, headers=headers)
+    return Response(content=content, status_code=response.status_code, headers=resp_headers)
+

@@ -1,6 +1,6 @@
 services:
   project-atlas:
-    version: v1.1.16
+    version: v1.1.17
     repo: project-atlas
     branch: main
   keysentry-api:
@@ -8,6 +8,6 @@ services:
     repo: keysentry-api
     branch: main
   cognito-api:
-    version: v0.0.4
+    version: v0.0.5
     repo: cognito-chat-api
     branch: master
