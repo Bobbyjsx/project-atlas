@@ -49,7 +49,9 @@ async def reverse_proxy(service_name: str, path: str, request: Request):
     # SSE path — stream chunks straight through without buffering
     if "text/event-stream" in request.headers.get("accept", ""):
         return StreamingResponse(
-            _stream_response(request.method, target_url, headers, req_body, request.query_params),
+            _stream_response(
+                request.method, target_url, headers, req_body, request.query_params
+            ),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
@@ -94,5 +96,6 @@ async def reverse_proxy(service_name: str, path: str, request: Request):
         resp_headers.pop("content-length", None)
 
     # Return the modified response from the sidecar
-    return Response(content=content, status_code=response.status_code, headers=resp_headers)
-
+    return Response(
+        content=content, status_code=response.status_code, headers=resp_headers
+    )
