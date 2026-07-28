@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     def SERVICE_MAP(self) -> dict:
         return {
             "keysentry": os.getenv("KEYSENTRY_URL", "http://localhost:8001"),
+            "cognito": os.getenv("COGNITO_URL", "http://localhost:8002"),
         }
 
     def get_service_api_key(self, service_name: str) -> str | None:

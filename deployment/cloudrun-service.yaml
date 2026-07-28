@@ -9,7 +9,7 @@ spec:
     metadata:
       annotations:
         # Crucial: enable multiple containers
-        run.googleapis.com/container-dependencies: '{"atlas-gateway": ["keysentry-sidecar"]}'
+        run.googleapis.com/container-dependencies: '{"atlas-gateway": ["keysentry-sidecar", "cognito-sidecar"]}'
         # Direct VPC Egress to reach internal VM IPs (like the database at 10.218.0.2)
         run.googleapis.com/vpc-access-egress: "private-ranges-only"
         run.googleapis.com/network-interfaces: '[{"network":"default","subnetwork":"default"}]'
@@ -76,6 +76,43 @@ spec:
           startupProbe:
             tcpSocket:
               port: 8001
+            initialDelaySeconds: 2
+            timeoutSeconds: 2
+            periodSeconds: 5
+            failureThreshold: 5
+
+        # --- Sidecar 2: Cognito API ---
+        - image: gcr.io/${GCP_PROJECT_ID}/cognito-api:${COGNITO_VERSION}
+          name: cognito-sidecar
+          env:
+            - name: PORT
+              value: "8002"
+            # It fetches the DB connection string natively from Google Secret Manager
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: keysentry-db-url           # Name of the secret in GCP Secret Manager
+                  key: latest
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cognito-gemini-api-key
+                  key: latest
+
+            - name: APP_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: cognito-app-name
+                  key: latest
+                  
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cognito-secret-key
+                  key: latest
+          startupProbe:
+            tcpSocket:
+              port: 8002
             initialDelaySeconds: 2
             timeoutSeconds: 2
             periodSeconds: 5
