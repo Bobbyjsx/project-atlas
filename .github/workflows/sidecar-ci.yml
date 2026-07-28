@@ -120,6 +120,7 @@ jobs:
           # 1. Extract versions from manifest
           export ATLAS_VERSION=$(yq '.services."project-atlas".version // "latest"' service-manifest.yaml)
           export KEYSENTRY_VERSION=$(yq '.services."keysentry-api".version // "latest"' service-manifest.yaml)
+          export COGNITO_VERSION=$(yq '.services."cognito-api".version // "latest"' service-manifest.yaml)
 
           # 2. Use envsubst to replace ${GCP_PROJECT_ID}, ${ATLAS_VERSION}, etc. inside the yaml file
           envsubst < deployment/cloudrun-service.yaml > deployment/cloudrun-service-applied.yaml
