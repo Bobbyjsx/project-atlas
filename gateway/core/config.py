@@ -31,5 +31,5 @@ settings = Settings()
 # Shared HTTP client for connection pooling
 # Generous read timeout for AI generation endpoints (LLM responses can take 30-60s+)
 http_client = httpx.AsyncClient(
-    timeout=httpx.Timeout(connect=10.0, read=120.0, write=10.0, pool=10.0)
+    timeout=httpx.Timeout(connect=10.0, read=120.0, write=30.0, pool=10.0)
 )
