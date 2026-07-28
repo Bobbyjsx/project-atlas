@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from gateway.api.routes import health, proxy
 
 api_router = APIRouter()

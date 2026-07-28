@@ -18,7 +18,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ruff
+          # Pin to requirements.txt so CI matches `make lint` / local venv
+          pip install -r requirements.txt
       - name: Run Ruff Linter
         run: ruff check .
       - name: Run Ruff Formatter

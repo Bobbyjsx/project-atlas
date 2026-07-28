@@ -1,6 +1,7 @@
 import httpx
-from fastapi import APIRouter, Request, HTTPException, Response
-from gateway.core.config import settings, http_client
+from fastapi import APIRouter, HTTPException, Request, Response
+
+from gateway.core.config import http_client, settings
 from gateway.core.security import validate_api_key
 
 router = APIRouter(tags=["Proxy"])

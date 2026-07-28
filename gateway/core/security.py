@@ -1,4 +1,5 @@
-from fastapi import Request, HTTPException
+from fastapi import HTTPException, Request
+
 from gateway.core.config import settings
 
 
