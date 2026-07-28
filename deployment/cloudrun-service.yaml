@@ -107,6 +107,11 @@ spec:
                 secretKeyRef:
                   name: cognito-secret-key
                   key: latest
+            - name: FIRESTORE_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: cognito-database-name
+                  key: latest
           startupProbe:
             tcpSocket:
               port: 8002
