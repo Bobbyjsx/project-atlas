@@ -8,21 +8,6 @@ from gateway.core.security import validate_api_key
 router = APIRouter(tags=["Proxy"])
 
 
-async def _stream_response(
-    method: str,
-    url: str,
-    headers: dict,
-    content: bytes,
-    params,
-):
-    """Pass SSE chunks from the sidecar straight to the client without buffering."""
-    async with http_client.stream(
-        method, url, headers=headers, content=content, params=params
-    ) as response:
-        async for chunk in response.aiter_bytes():
-            yield chunk
-
-
 @router.api_route(
     "/{service_name}/{path:path}",
     methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
@@ -48,10 +33,36 @@ async def reverse_proxy(service_name: str, path: str, request: Request):
 
     # SSE path — stream chunks straight through without buffering
     if "text/event-stream" in request.headers.get("accept", ""):
+        req = http_client.build_request(
+            request.method, target_url, headers=headers, content=req_body, params=request.query_params
+        )
+        try:
+            sidecar_resp = await http_client.send(req, stream=True)
+        except httpx.RequestError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Failed to communicate with sidecar '{service_name}': {exc}",
+            )
+
+        if sidecar_resp.status_code >= 400:
+            error_content = await sidecar_resp.aread()
+            await sidecar_resp.aclose()
+            return Response(
+                content=error_content,
+                status_code=sidecar_resp.status_code,
+                headers={"content-type": sidecar_resp.headers.get("content-type", "application/json")},
+            )
+
+        async def _stream_body():
+            try:
+                async for chunk in sidecar_resp.aiter_bytes():
+                    yield chunk
+            finally:
+                await sidecar_resp.aclose()
+
         return StreamingResponse(
-            _stream_response(
-                request.method, target_url, headers, req_body, request.query_params
-            ),
+            _stream_body(),
+            status_code=sidecar_resp.status_code,
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
