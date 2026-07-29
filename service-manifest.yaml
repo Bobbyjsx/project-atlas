@@ -8,6 +8,6 @@ services:
     repo: keysentry-api
     branch: main
   cognito-api:
-    version: v0.0.15
+    version: v0.0.16
     repo: cognito-chat-api
     branch: master
