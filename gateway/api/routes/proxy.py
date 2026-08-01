@@ -34,7 +34,11 @@ async def reverse_proxy(service_name: str, path: str, request: Request):
     # SSE path — stream chunks straight through without buffering
     if "text/event-stream" in request.headers.get("accept", ""):
         req = http_client.build_request(
-            request.method, target_url, headers=headers, content=req_body, params=request.query_params
+            request.method,
+            target_url,
+            headers=headers,
+            content=req_body,
+            params=request.query_params,
         )
         try:
             sidecar_resp = await http_client.send(req, stream=True)
@@ -50,7 +54,11 @@ async def reverse_proxy(service_name: str, path: str, request: Request):
             return Response(
                 content=error_content,
                 status_code=sidecar_resp.status_code,
-                headers={"content-type": sidecar_resp.headers.get("content-type", "application/json")},
+                headers={
+                    "content-type": sidecar_resp.headers.get(
+                        "content-type", "application/json"
+                    )
+                },
             )
 
         async def _stream_body():

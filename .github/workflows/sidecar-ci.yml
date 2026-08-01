@@ -99,7 +99,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        region: [us-central1, africa-south1]
+        region: [africa-south1]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
