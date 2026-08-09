@@ -112,7 +112,12 @@ spec:
                 secretKeyRef:
                   name: cognito-database-name
                   key: latest
-            - name: BACKEND_STORAGE
+            - name: STORAGE_BACKEND
+              valueFrom:
+                secretKeyRef:
+                  name: cognito-storage-backend
+                  key: latest
+            - name: STORAGE_BUCKET
               valueFrom:
                 secretKeyRef:
                   name: cognito-storage-bucket-name
