@@ -8,6 +8,10 @@ def validate_api_key(request: Request, service_name: str, path: str):
     Validates the X-Atlas-Api-Key header.
     Allows public routes defined in settings.PUBLIC_PREFIXES to pass through.
     """
+    # Allow OPTIONS requests for CORS preflight
+    if request.method == "OPTIONS":
+        return
+
     # Check if path contains or starts with any of the public prefixes (like docs, redoc)
     for prefix in settings.PUBLIC_PREFIXES:
         if path.startswith(prefix) or f"/{prefix}" in path:
