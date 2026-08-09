@@ -8,7 +8,6 @@ services:
     repo: keysentry-api
     branch: main
   cognito-api:
-    version: v0.0.29
+    version: v0.0.30
     repo: cognito-chat-api
-    # branch: master
-    branch: feature/gemini-tools-and-attachments
+    branch: master
