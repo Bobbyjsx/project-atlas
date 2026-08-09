@@ -112,6 +112,11 @@ spec:
                 secretKeyRef:
                   name: cognito-database-name
                   key: latest
+            - name: BACKEND_STORAGE
+              valueFrom:
+                secretKeyRef:
+                  name: cognito-storage-bucket-name
+                  key: latest
           startupProbe:
             tcpSocket:
               port: 8002
