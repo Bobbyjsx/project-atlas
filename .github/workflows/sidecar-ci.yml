@@ -109,12 +109,22 @@ jobs:
         env:
           BASE_IMAGE: ${{ steps.images.outputs.base }}
         run: |
-          cat > ./Dockerfile.atlas-runtime <<'EOF'
-          ARG BASE_IMAGE
-          FROM ${BASE_IMAGE}
-          COPY atlas-runtime /usr/local/bin/atlas-runtime
-          ENTRYPOINT ["/usr/local/bin/atlas-runtime"]
-          EOF
+          docker pull $BASE_IMAGE
+          python3 -c '
+          import sys, json, subprocess
+          base_image = sys.argv[1]
+          out = subprocess.check_output(["docker", "inspect", base_image])
+          config = json.loads(out)[0]["Config"]
+          entrypoint = config.get("Entrypoint") or []
+          cmd = config.get("Cmd") or []
+          full_cmd = entrypoint + cmd
+          with open("Dockerfile.atlas-runtime", "w") as f:
+              f.write("ARG BASE_IMAGE\n")
+              f.write(f"FROM {base_image}\n")
+              f.write("COPY atlas-runtime /usr/local/bin/atlas-runtime\n")
+              f.write("ENTRYPOINT [\"/usr/local/bin/atlas-runtime\"]\n")
+              f.write(f"CMD {json.dumps(full_cmd)}\n")
+          ' "$BASE_IMAGE"
 
       - name: Build and push Atlas-enabled image
         uses: docker/build-push-action@v5
