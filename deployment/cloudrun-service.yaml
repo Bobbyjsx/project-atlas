@@ -8,6 +8,7 @@ spec:
   template:
     metadata:
       annotations:
+        run.googleapis.com/github-run-id: "${GITHUB_RUN_ID}"
         # Crucial: enable multiple containers
         run.googleapis.com/container-dependencies: '{"atlas-gateway": ["keysentry-sidecar", "cognito-sidecar"]}'
         # Direct VPC Egress to reach internal VM IPs (like the database at 10.218.0.2)

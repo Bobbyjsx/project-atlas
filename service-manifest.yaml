@@ -1,16 +1,16 @@
 services:
   project-atlas:
-    version: v1.1.18
-    repo: project-atlas
-    branch: main
-    secret: atlas-gateway-secrets
+    version: "v1.1.19"
+    repo: "project-atlas"
+    branch: "main"
+    secret: "atlas-gateway-secrets"
   keysentry-api:
-    version: v2.5.4
-    repo: keysentry-api
-    branch: main
-    secret: keysentry-api-secrets
+    version: "v2.5.5"
+    repo: "keysentry-api"
+    branch: "main"
+    secret: "keysentry-api-secrets"
   cognito-api:
-    version: v0.0.33
-    repo: cognito-chat-api
-    branch: master
-    secret: cognito-api-secrets
+    version: "v0.0.34"
+    repo: "cognito-chat-api"
+    branch: "master"
+    secret: "cognito-api-secrets"
