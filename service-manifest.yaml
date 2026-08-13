@@ -3,11 +3,14 @@ services:
     version: v1.1.18
     repo: project-atlas
     branch: main
+    secret: atlas-gateway-config
   keysentry-api:
     version: v2.5.4
     repo: keysentry-api
     branch: main
+    secret: keysentry-config
   cognito-api:
     version: v0.0.33
     repo: cognito-chat-api
     branch: master
+    secret: cognito-config
