@@ -24,7 +24,7 @@ def load_config() -> None:
         raise RuntimeError(f"invalid {CONFIG_ENV} JSON: {exc}") from exc
 
     if not isinstance(config, dict):
-        raise RuntimeError(f"{CONFIG_ENV} must contain a JSON object")
+        raise TypeError(f"{CONFIG_ENV} must contain a JSON object")
 
     for key, value in config.items():
         if not isinstance(key, str) or not valid_env_name(key):
@@ -34,7 +34,7 @@ def load_config() -> None:
         if value is None:
             continue
         if not isinstance(value, str):
-            raise RuntimeError(f"environment variable {key!r} must be a string")
+            raise TypeError(f"environment variable {key!r} must be a string")
         os.environ[key] = value
 
     os.environ.pop(CONFIG_ENV, None)

@@ -3,7 +3,6 @@ import os
 import subprocess
 import sys
 
-
 RUNTIME = os.path.join(os.path.dirname(__file__), "entrypoint.py")
 
 
@@ -17,12 +16,31 @@ def run(config, *command):
         env=env,
         text=True,
         capture_output=True,
+        check=False,
     )
 
 
 def test_without_config_preserves_environment():
-    result = run(None, sys.executable, "-c", "import os; print(os.getenv('NORMAL_ENV'))")
+    env = os.environ.copy()
+    env.pop("ATLAS_CONFIG", None)
+    env["NORMAL_ENV"] = "preserved"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            RUNTIME,
+            sys.executable,
+            "-c",
+            "import os; print(os.getenv('NORMAL_ENV'))",
+        ],
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
     assert result.returncode == 0
+    assert result.stdout.strip() == "preserved"
 
 
 def test_config_becomes_environment():
@@ -44,6 +62,7 @@ def test_invalid_json_fails():
         env=env,
         text=True,
         capture_output=True,
+        check=False,
     )
     assert result.returncode != 0
     assert "invalid ATLAS_CONFIG JSON" in result.stderr
