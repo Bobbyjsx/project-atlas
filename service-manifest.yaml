@@ -1,6 +1,6 @@
 services:
   project-atlas:
-    version: "v1.1.19"
+    version: "v1.1.20"
     repo: "project-atlas"
     branch: "main"
     secret: "atlas-gateway-secrets"
