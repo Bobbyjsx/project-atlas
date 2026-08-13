@@ -6,11 +6,15 @@ on:
       - main
     paths:
       - 'service-manifest.yaml'
+      - 'deployment/**'
+      - 'runtime/**'
+      - '.github/workflows/sidecar-ci.yml'
   workflow_dispatch:
 
 env:
   REGISTRY: gcr.io
   GCP_PROJECT_ID: project-atlas-501612
+
 jobs:
   parse-manifest:
     name: Parse Service Manifest
@@ -24,8 +28,7 @@ jobs:
       - name: Read manifest and output JSON matrix
         id: set-matrix
         run: |
-          # Convert YAML to JSON array for GitHub Actions matrix
-          SERVICES_JSON=$(yq -o=json '[.services | to_entries | .[] | {"name": .key, "version": .value.version, "repo": .value.repo, "branch": .value.branch}]' service-manifest.yaml | jq -c .)
+          SERVICES_JSON=$(yq -o=json '[.services | to_entries | .[] | {"name": .key, "version": .value.version, "repo": .value.repo, "branch": .value.branch, "secret": .value.secret}]' service-manifest.yaml | jq -c .)
           echo "services=$SERVICES_JSON" >> $GITHUB_OUTPUT
 
   build-and-push:
@@ -38,9 +41,23 @@ jobs:
         service: ${{ fromJson(needs.parse-manifest.outputs.services) }}
 
     steps:
-      # Authenticate to Google Cloud
+      - name: Checkout Atlas runtime
+        uses: actions/checkout@v4
+        with:
+          path: ./atlas
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache-dependency-path: ./atlas/runtime/go.mod
+
+      - name: Build Atlas runtime
+        working-directory: ./atlas/runtime
+        run: |
+          CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o ../atlas-runtime ./
+
       - name: Authenticate to Google Cloud
-        id: auth
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
@@ -49,48 +66,70 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Configure Docker to use GCR
-        run: |
-          gcloud auth configure-docker gcr.io
+        run: gcloud auth configure-docker gcr.io
 
-      - name: Check if image already exists in GCR
-        id: check-image
+      - name: Set image names
+        id: images
         env:
-          IMAGE_NAME: ${{ env.REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ matrix.service.name }}:${{ matrix.service.version }}
+          SERVICE_NAME: ${{ matrix.service.name }}
+          SERVICE_VERSION: ${{ matrix.service.version }}
         run: |
-          # Use docker manifest inspect to see if the tag already exists
-          # If it exists, we skip the build to prevent overwriting
-          if docker manifest inspect $IMAGE_NAME > /dev/null 2>&1; then
-            echo "Image $IMAGE_NAME already exists! Skipping build."
-            echo "exists=true" >> $GITHUB_OUTPUT
+          echo "base=${REGISTRY}/${GCP_PROJECT_ID}/${SERVICE_NAME}:${SERVICE_VERSION}-base" >> "$GITHUB_OUTPUT"
+          echo "final=${REGISTRY}/${GCP_PROJECT_ID}/${SERVICE_NAME}:${SERVICE_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Check if base image already exists
+        id: check-base
+        env:
+          IMAGE_NAME: ${{ steps.images.outputs.base }}
+        run: |
+          if docker manifest inspect "$IMAGE_NAME" > /dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Image $IMAGE_NAME does not exist. Proceeding with build."
-            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Checkout external repository (${{ matrix.service.repo }})
-        if: steps.check-image.outputs.exists == 'false'
+        if: steps.check-base.outputs.exists == 'false'
         uses: actions/checkout@v4
         with:
-          # Dynamically prepend the org/user (e.g. Bobbyjsx)
           repository: ${{ github.repository_owner }}/${{ matrix.service.repo }}
           ref: ${{ matrix.service.branch }}
-          # Use a GitHub Secret for the Personal Access Token
           token: ${{ secrets.PAT_TOKEN }}
           path: './src'
 
       - name: Set up Docker Buildx
-        if: steps.check-image.outputs.exists == 'false'
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push Docker image
-        if: steps.check-image.outputs.exists == 'false'
+      - name: Build and push application base image
+        if: steps.check-base.outputs.exists == 'false'
         uses: docker/build-push-action@v5
         with:
           context: ./src
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ matrix.service.name }}:${{ matrix.service.version }}
+          tags: ${{ steps.images.outputs.base }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Create runtime wrapper Dockerfile
+        env:
+          BASE_IMAGE: ${{ steps.images.outputs.base }}
+        run: |
+          cat > ./Dockerfile.atlas-runtime <<'EOF'
+          ARG BASE_IMAGE
+          FROM ${BASE_IMAGE}
+          COPY atlas-runtime /usr/local/bin/atlas-runtime
+          ENTRYPOINT ["/usr/local/bin/atlas-runtime"]
+          EOF
+
+      - name: Build and push Atlas-enabled image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.atlas-runtime
+          build-args: |
+            BASE_IMAGE=${{ steps.images.outputs.base }}
+          push: true
+          tags: ${{ steps.images.outputs.final }}
 
   deploy:
     name: Deploy to Cloud Run (${{ matrix.region }})
@@ -112,17 +151,21 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Update deployment manifest with new image versions
+      - name: Update deployment manifest with image versions and secret bundles
         env:
-          # Pull variables from GitHub Vars into the environment for envsubst
           GCP_PROJECT_ID: ${{ env.GCP_PROJECT_ID }}
         run: |
-          # 1. Extract versions from manifest
           export ATLAS_VERSION=$(yq '.services."project-atlas".version // "latest"' service-manifest.yaml)
           export KEYSENTRY_VERSION=$(yq '.services."keysentry-api".version // "latest"' service-manifest.yaml)
           export COGNITO_VERSION=$(yq '.services."cognito-api".version // "latest"' service-manifest.yaml)
+          export ATLAS_SECRET=$(yq '.services."project-atlas".secret' service-manifest.yaml)
+          export KEYSENTRY_SECRET=$(yq '.services."keysentry-api".secret' service-manifest.yaml)
+          export COGNITO_SECRET=$(yq '.services."cognito-api".secret' service-manifest.yaml)
 
-          # 2. Use envsubst to replace ${GCP_PROJECT_ID}, ${ATLAS_VERSION}, etc. inside the yaml file
+          test -n "$ATLAS_SECRET" && test "$ATLAS_SECRET" != "null"
+          test -n "$KEYSENTRY_SECRET" && test "$KEYSENTRY_SECRET" != "null"
+          test -n "$COGNITO_SECRET" && test "$COGNITO_SECRET" != "null"
+
           envsubst < deployment/cloudrun-service.yaml > deployment/cloudrun-service-applied.yaml
 
       - name: Deploy to Cloud Run
