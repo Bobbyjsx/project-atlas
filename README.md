@@ -70,14 +70,17 @@ To add or update a sidecar service:
    - Inject the new image tags and `GCP_PROJECT_ID` into `deployment/cloudrun-service.yaml` using `envsubst`.
    - Deploy the updated multi-container topology to Google Cloud Run.
 
-### Secrets Management
+### Secrets Management (Atlas Runtime)
 
-This project uses **Google Secret Manager (GSM)** for production secrets to ensure GitHub Actions never touches sensitive data. 
+This project uses **Google Secret Manager (GSM)** for production secrets combined with the **Atlas Runtime** entrypoint. To eliminate configuration sprawl, each service uses a single JSON secret containing all its environment variables, rather than mapping each variable individually.
 
-When adding a new secret:
-1. Add it to your local `.env` file for local development.
-2. Go to the **Google Cloud Console > Secret Manager**.
-3. Create a new secret (e.g., `keysentry-db-url`).
-4. Reference it in `deployment/cloudrun-service.yaml` using `valueFrom.secretKeyRef`.
+When adding or updating secrets for a service:
+1. Add the new variable to your local `.env` file for local development.
+2. In production, update the corresponding service's JSON secret in **Google Cloud Secret Manager** (e.g., `atlas-gateway-secrets`, `keysentry-api-secrets`, `cognito-api-secrets`).
+3. The Cloud Run manifest (`deployment/cloudrun-service.yaml`) mounts this entire JSON payload into the `ATLAS_CONFIG` environment variable.
+
+The `atlas-runtime` automatically parses `ATLAS_CONFIG` and natively exports all key-value pairs into the process environment before your application starts. This keeps your application code completely decoupled from Google Cloud and JSON parsing logic.
+
+**For more details on how the runtime works and how to integrate it into new sidecar services, see the [Runtime Documentation](runtime/README.md).**
 
 *Ensure your Cloud Run service account has the **Secret Manager Secret Accessor** IAM role.*
