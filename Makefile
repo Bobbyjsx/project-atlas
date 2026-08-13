@@ -25,6 +25,10 @@ lint-fix:
 	.venv/bin/ruff check --fix .
 	.venv/bin/ruff format .
 
+test-runtime:
+	@echo "Running runtime service tests"
+	.venv/bin/pytest ./runtime/test_entrypoint.py -v
+	
 clean:
 	@echo "Cleaning up python cache files..."
 	find . -type d -name "__pycache__" -exec rm -r {} +

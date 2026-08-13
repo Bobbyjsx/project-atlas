@@ -7,3 +7,10 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
+
+      - id: make-test-runtime
+        name: make test-runtime
+        entry: make test-runtime
+        language: system
+        types: [python]
+        pass_filenames: false
