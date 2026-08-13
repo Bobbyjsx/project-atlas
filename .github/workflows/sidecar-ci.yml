@@ -46,16 +46,11 @@ jobs:
         with:
           path: ./atlas
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.23'
-          cache-dependency-path: ./atlas/runtime/go.mod
-
-      - name: Build Atlas runtime
+      - name: Prepare Atlas runtime
         working-directory: ./atlas/runtime
         run: |
-          CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o ../atlas-runtime ./
+          cp entrypoint.py ../atlas-runtime
+          chmod +x ../atlas-runtime
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
