@@ -49,8 +49,8 @@ jobs:
       - name: Prepare Atlas runtime
         working-directory: ./atlas/runtime
         run: |
-          cp entrypoint.py ../atlas-runtime
-          chmod +x ../atlas-runtime
+          cp entrypoint.py ../../atlas-runtime
+          chmod +x ../../atlas-runtime
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
