@@ -161,15 +161,18 @@ jobs:
           GCP_PROJECT_ID: ${{ env.GCP_PROJECT_ID }}
         run: |
           export ATLAS_VERSION=$(yq '.services."project-atlas".version // "latest"' service-manifest.yaml)
-          export KEYSENTRY_VERSION=$(yq '.services."keysentry-api".version // "latest"' service-manifest.yaml)
-          export COGNITO_VERSION=$(yq '.services."cognito-api".version // "latest"' service-manifest.yaml)
           export ATLAS_SECRET=$(yq '.services."project-atlas".secret' service-manifest.yaml)
+          export KEYSENTRY_VERSION=$(yq '.services."keysentry-api".version // "latest"' service-manifest.yaml)
           export KEYSENTRY_SECRET=$(yq '.services."keysentry-api".secret' service-manifest.yaml)
+          export COGNITO_VERSION=$(yq '.services."cognito-api".version // "latest"' service-manifest.yaml)
           export COGNITO_SECRET=$(yq '.services."cognito-api".secret' service-manifest.yaml)
+          export IDENTITY_SERVICE_VERSION=$(yq '.services."identity-service".version // "latest"' service-manifest.yaml)
+          export IDENTITY_SERVICE_SECRET=$(yq '.services."identity-service".version // "latest"' service-manifest.yaml)
 
           test -n "$ATLAS_SECRET" && test "$ATLAS_SECRET" != "null"
           test -n "$KEYSENTRY_SECRET" && test "$KEYSENTRY_SECRET" != "null"
           test -n "$COGNITO_SECRET" && test "$COGNITO_SECRET" != "null"
+          test -n "$IDENTITY_SERVICE_SECRET" && test "$COGNITO_SECRET" != "null"
 
           envsubst < deployment/cloudrun-service.yaml > deployment/cloudrun-service-applied.yaml
 

@@ -10,7 +10,7 @@ spec:
       annotations:
         run.googleapis.com/github-run-id: "${GITHUB_RUN_ID}"
         # Crucial: enable multiple containers
-        run.googleapis.com/container-dependencies: '{"atlas-gateway": ["keysentry-sidecar", "cognito-sidecar"]}'
+        run.googleapis.com/container-dependencies: '{"atlas-gateway": ["keysentry-sidecar", "cognito-sidecar", "identity-service-sidecar"]}'
         # Direct VPC Egress to reach internal VM IPs (like the database at 10.218.0.2)
         run.googleapis.com/vpc-access-egress: "private-ranges-only"
         run.googleapis.com/network-interfaces: '[{"network":"default","subnetwork":"default"}]'
@@ -65,6 +65,25 @@ spec:
           startupProbe:
             tcpSocket:
               port: 8002
+            initialDelaySeconds: 2
+            timeoutSeconds: 2
+            periodSeconds: 5
+            failureThreshold: 5
+
+        # --- Sidecar 3: Identity Serice API ---
+        - image: gcr.io/${GCP_PROJECT_ID}/identity-service:${IDENTITY_SERVICE_VERSION}
+          name: identity-service-sidecar
+          env:
+            - name: PORT
+              value: "8003"
+            - name: ATLAS_CONFIG
+              valueFrom:
+                secretKeyRef:
+                  name: ${IDENTITY_SERVICE_SECRET}
+                  key: latest
+          startupProbe:
+            tcpSocket:
+              port: 8003
             initialDelaySeconds: 2
             timeoutSeconds: 2
             periodSeconds: 5

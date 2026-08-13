@@ -16,6 +16,7 @@ class Settings(BaseSettings):
         return {
             "keysentry": os.getenv("KEYSENTRY_URL", "http://localhost:8001"),
             "cognito": os.getenv("COGNITO_URL", "http://localhost:8002"),
+            "identity": os.getenv("IDENTITY_URL", "http://localhost:8003"),
         }
 
     def get_service_api_key(self, service_name: str) -> str | None:

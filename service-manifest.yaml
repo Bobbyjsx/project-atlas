@@ -14,3 +14,8 @@ services:
     repo: "cognito-chat-api"
     branch: "master"
     secret: "cognito-api-secrets"
+  identity-service:
+    version: "v0.0.1"
+    repo: "identity-service"
+    branch: "main"
+    secret: "identity-service-api-secrets"
