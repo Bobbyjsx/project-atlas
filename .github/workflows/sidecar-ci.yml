@@ -159,6 +159,7 @@ jobs:
       - name: Update deployment manifest with image versions and secret bundles
         env:
           GCP_PROJECT_ID: ${{ env.GCP_PROJECT_ID }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
           export ATLAS_VERSION=$(yq '.services."project-atlas".version // "latest"' service-manifest.yaml)
           export ATLAS_SECRET=$(yq '.services."project-atlas".secret' service-manifest.yaml)

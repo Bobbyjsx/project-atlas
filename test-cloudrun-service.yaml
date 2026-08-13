@@ -8,7 +8,7 @@ spec:
   template:
     metadata:
       annotations:
-        run.googleapis.com/github-run-id: "${GITHUB_RUN_ID}"
+        run.googleapis.com/github-run-id: "9999999"
         # Crucial: enable multiple containers
         run.googleapis.com/container-dependencies: '{"atlas-gateway": ["keysentry-sidecar", "cognito-sidecar", "identity-service-sidecar"]}'
         # Direct VPC Egress to reach internal VM IPs (like the database at 10.218.0.2)
@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         # --- The Ingress Gateway Container ---
-        - image: gcr.io/${GCP_PROJECT_ID}/project-atlas:${ATLAS_VERSION}
+        - image: gcr.io/project-atlas-501612/project-atlas:
           name: atlas-gateway
           ports:
             - containerPort: 8080
@@ -25,7 +25,7 @@ spec:
             - name: ATLAS_CONFIG
               valueFrom:
                 secretKeyRef:
-                  name: ${ATLAS_SECRET}
+                  name: 
                   key: latest
           resources:
             limits:
@@ -33,7 +33,7 @@ spec:
               memory: "512Mi"
 
         # --- Sidecar 1: KeySentry API ---
-        - image: gcr.io/${GCP_PROJECT_ID}/keysentry-api:${KEYSENTRY_VERSION}
+        - image: gcr.io/project-atlas-501612/keysentry-api:
           name: keysentry-sidecar
           env:
             - name: PORT
@@ -41,7 +41,7 @@ spec:
             - name: ATLAS_CONFIG
               valueFrom:
                 secretKeyRef:
-                  name: ${KEYSENTRY_SECRET}
+                  name: 
                   key: latest
           startupProbe:
             tcpSocket:
@@ -52,7 +52,7 @@ spec:
             failureThreshold: 5
 
         # --- Sidecar 2: Cognito API ---
-        - image: gcr.io/${GCP_PROJECT_ID}/cognito-api:${COGNITO_VERSION}
+        - image: gcr.io/project-atlas-501612/cognito-api:
           name: cognito-sidecar
           env:
             - name: PORT
@@ -60,7 +60,7 @@ spec:
             - name: ATLAS_CONFIG
               valueFrom:
                 secretKeyRef:
-                  name: ${COGNITO_SECRET}
+                  name: 
                   key: latest
           startupProbe:
             tcpSocket:
@@ -71,7 +71,7 @@ spec:
             failureThreshold: 5
 
         # --- Sidecar 3: Identity Serice API ---
-        - image: gcr.io/${GCP_PROJECT_ID}/identity-service:${IDENTITY_SERVICE_VERSION}
+        - image: gcr.io/project-atlas-501612/identity-service:
           name: identity-service-sidecar
           env:
             - name: PORT
@@ -79,12 +79,12 @@ spec:
             - name: ATLAS_CONFIG
               valueFrom:
                 secretKeyRef:
-                  name: ${IDENTITY_SERVICE_SECRET}
+                  name: 
                   key: latest
           startupProbe:
             tcpSocket:
               port: 8003
-            initialDelaySeconds: 5
-            timeoutSeconds: 3
+            initialDelaySeconds: 2
+            timeoutSeconds: 2
             periodSeconds: 5
-            failureThreshold: 10
+            failureThreshold: 5
