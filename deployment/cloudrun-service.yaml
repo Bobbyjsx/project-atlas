@@ -21,20 +21,10 @@ spec:
           ports:
             - containerPort: 8080
           env:
-            - name: API_KEY_KEYSENTRY
+            - name: ATLAS_CONFIG
               valueFrom:
                 secretKeyRef:
-                  name: api-key-keysentry  # Name of the secret in GCP Secret Manager
-                  key: latest
-            - name: API_KEY_CHESS
-              valueFrom:
-                secretKeyRef:
-                  name: api-key-chess
-                  key: latest
-            - name: API_KEY_COGNITO
-              valueFrom:
-                secretKeyRef:
-                  name: api-key-cognito
+                  name: ${ATLAS_SECRET}
                   key: latest
           resources:
             limits:
@@ -47,36 +37,10 @@ spec:
           env:
             - name: PORT
               value: "8001"
-            # It fetches the DB connection string natively from Google Secret Manager
-            - name: DATABASE_URL
+            - name: ATLAS_CONFIG
               valueFrom:
                 secretKeyRef:
-                  name: keysentry-db-url           # Name of the secret in GCP Secret Manager
-                  key: latest                      # Use the latest version of the secret
-            - name: GOTRUE_JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: atlas-gotrue-jwt-secret
-                  key: latest
-            - name: GOTRUE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: atlas-gotrue-url
-                  key: latest
-            - name: ENCRYPTION_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: keysentry-encryption-key
-                  key: latest
-            - name: TRIGGER_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: keysentry-trigger-api-key
-                  key: latest
-            - name: INTERNAL_API_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: keysentry-internal-api-secret
+                  name: ${KEYSENTRY_SECRET}
                   key: latest
           startupProbe:
             tcpSocket:
@@ -92,40 +56,10 @@ spec:
           env:
             - name: PORT
               value: "8002"
-            - name: GEMINI_API_KEY
+            - name: ATLAS_CONFIG
               valueFrom:
                 secretKeyRef:
-                  name: cognito-gemini-key
-                  key: latest
-            - name: APP_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: cognito-app-name
-                  key: latest
-            - name: SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: cognito-secret-key
-                  key: latest
-            - name: FIRESTORE_DATABASE
-              valueFrom:
-                secretKeyRef:
-                  name: cognito-database-name
-                  key: latest
-            - name: STORAGE_BACKEND
-              valueFrom:
-                secretKeyRef:
-                  name: cognito-storage-backend
-                  key: latest
-            - name: STORAGE_BUCKET
-              valueFrom:
-                secretKeyRef:
-                  name: cognito-storage-bucket-name
-                  key: latest
-            - name: REDIS_URL
-              valueFrom:
-                secretKeyRef:
-                  name: cognito-redis-url
+                  name: ${COGNITO_SECRET}
                   key: latest
           startupProbe:
             tcpSocket:
